@@ -1,0 +1,30 @@
+{
+  "onibus": {
+    "onibus1": {
+      "ativo": false,
+      "encerrou": false,
+      "rota": "Monte Santo – Rota Principal",
+      "latitude": -10.439971,
+      "longitude": -39.327771,
+      "velocidade": 0,
+      "ultimaAtualizacao": ""
+    }
+  },
+  "paradas": {
+    "ponto1": {
+      "nome": "Av. Pedra Vermelha, 2751",
+      "latitude": -10.439971,
+      "longitude": -39.327771
+    },
+    "ponto2": {
+      "nome": "Posto Altar do Sertão",
+      "latitude": -10.439915,
+      "longitude": -39.329013
+    },
+    "ponto3": {
+      "nome": "Praça Professor Salgado",
+      "latitude": -10.440289,
+      "longitude": -39.333558
+    }
+  }
+}

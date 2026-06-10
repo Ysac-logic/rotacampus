@@ -1,0 +1,509 @@
+/* ============================================================
+   ROTACAMPUS  –  style.css  –  Monte Santo BA
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --azul:       #2563eb;
+  --azul-esc:   #1d4ed8;
+  --azul-claro: #dbeafe;
+  --verde:      #16a34a;
+  --verde-claro:#dcfce7;
+  --amarelo:    #f59e0b;
+  --amarelo-cl: #fef3c7;
+  --vermelho:   #dc2626;
+  --cinza-1:    #f8fafc;
+  --cinza-2:    #f1f5f9;
+  --cinza-3:    #e2e8f0;
+  --cinza-5:    #64748b;
+  --cinza-8:    #1e293b;
+  --branco:     #ffffff;
+  --radius:     12px;
+  --sombra:     0 2px 12px rgba(0,0,0,.08);
+  --sombra-md:  0 4px 24px rgba(0,0,0,.12);
+}
+
+html, body { height: 100%; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+/* ============================================================
+   PÁGINA DOS ALUNOS
+   ============================================================ */
+.pagina-aluno {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--cinza-1);
+  overflow: hidden;
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.header {
+  background: var(--azul);
+  color: var(--branco);
+  padding: 0 14px;
+  height: 50px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(37,99,235,.35);
+  z-index: 1000;
+}
+.header-inner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.logo { display: flex; align-items: center; gap: 7px; }
+.logo-icon { font-size: 20px; }
+.logo-nome { font-weight: 700; font-size: 17px; letter-spacing: -.3px; }
+.logo-cidade {
+  font-size: 11px;
+  opacity: .75;
+  margin-left: 4px;
+  display: none;
+}
+@media (min-width: 400px) { .logo-cidade { display: inline; } }
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,.18);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+  transition: background .4s;
+  flex-shrink: 0;
+}
+.dot-online  { background: #4ade80; box-shadow: 0 0 0 3px rgba(74,222,128,.3); }
+.dot-offline { background: #f87171; }
+
+/* ── Histórico de passagens ──────────────────────────────── */
+.historico-bar {
+  background: var(--branco);
+  border-bottom: 1px solid var(--cinza-3);
+  padding: 8px 14px;
+  flex-shrink: 0;
+  z-index: 900;
+}
+.historico-titulo {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--cinza-5);
+  font-weight: 700;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.historico-lista {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.historico-lista::-webkit-scrollbar { height: 3px; }
+.historico-lista::-webkit-scrollbar-thumb { background: var(--cinza-3); border-radius: 3px; }
+
+.historico-vazio {
+  font-size: 12px;
+  color: var(--cinza-5);
+  font-style: italic;
+  padding: 2px 0;
+}
+
+.historico-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--amarelo-cl);
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 5px 10px;
+  flex-shrink: 0;
+  animation: slidein .3s ease;
+}
+@keyframes slidein {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.hist-icon { font-size: 14px; }
+.hist-info { display: flex; flex-direction: column; gap: 1px; }
+.hist-nome { font-size: 12px; font-weight: 600; color: var(--cinza-8); white-space: nowrap; }
+.hist-hora { font-size: 11px; color: var(--amarelo); font-weight: 700; }
+
+/* ── Info bar ────────────────────────────────────────────── */
+.infobar {
+  background: var(--branco);
+  border-bottom: 1px solid var(--cinza-3);
+  padding: 7px 14px;
+  flex-shrink: 0;
+  z-index: 890;
+}
+.infobar-inner { display: flex; gap: 20px; flex-wrap: wrap; }
+.info-item { display: flex; flex-direction: column; gap: 1px; }
+.info-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--cinza-5);
+  font-weight: 600;
+}
+.info-value { font-size: 13px; font-weight: 600; color: var(--cinza-8); }
+
+/* ── Mapa ────────────────────────────────────────────────── */
+#map { flex: 1; z-index: 1; }
+
+/* ── Marcadores ──────────────────────────────────────────── */
+.marker-onibus {
+  font-size: 28px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.4));
+  animation: pulse-onibus 2s infinite;
+}
+@keyframes pulse-onibus {
+  0%,100% { transform: scale(1); }
+  50%      { transform: scale(1.12); }
+}
+
+.marker-parada-num {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--azul);
+  color: var(--branco);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--branco);
+  box-shadow: 0 2px 6px rgba(0,0,0,.3);
+}
+
+/* ── Legenda ─────────────────────────────────────────────── */
+.legenda {
+  position: fixed;
+  bottom: 18px;
+  left: 14px;
+  background: var(--branco);
+  border-radius: 10px;
+  padding: 7px 12px;
+  display: flex;
+  gap: 14px;
+  box-shadow: var(--sombra);
+  font-size: 12px;
+  z-index: 500;
+}
+.legenda-item { display: flex; align-items: center; gap: 5px; color: var(--cinza-8); font-weight: 500; }
+.legenda-circ {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--azul);
+  border: 2px solid var(--branco);
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  flex-shrink: 0;
+}
+
+/* ── Alerta de chegada ───────────────────────────────────── */
+.chegada-alerta {
+  position: fixed;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  transition: top .4s cubic-bezier(.34,1.56,.64,1);
+  pointer-events: none;
+  width: calc(100% - 28px);
+  max-width: 420px;
+}
+.chegada-alerta.alerta-visivel { top: 14px; }
+
+.chegada-inner {
+  background: var(--cinza-8);
+  color: var(--branco);
+  border-radius: 16px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.08);
+}
+.chegada-icon { font-size: 28px; flex-shrink: 0; }
+.chegada-texto { flex: 1; }
+.chegada-titulo { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; opacity: .6; margin-bottom: 2px; }
+.chegada-nome   { font-size: 15px; font-weight: 700; line-height: 1.2; }
+.chegada-hora   { font-size: 13px; color: #4ade80; font-weight: 600; margin-top: 2px; }
+
+/* ── Offline overlay ─────────────────────────────────────── */
+.offline-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,.5);
+  backdrop-filter: blur(3px);
+  z-index: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.offline-card {
+  background: var(--branco);
+  border-radius: 20px;
+  padding: 36px 40px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  max-width: 300px;
+}
+.offline-icon   { font-size: 48px; display: block; margin-bottom: 12px; }
+.offline-titulo { font-size: 20px; font-weight: 700; color: var(--cinza-8); margin-bottom: 8px; }
+.offline-sub    { font-size: 14px; color: var(--cinza-5); line-height: 1.5; }
+
+/* ============================================================
+   LOGIN DO MOTORISTA
+   ============================================================ */
+.login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #1d4ed8 100%);
+  padding: 20px;
+}
+.login-card {
+  background: var(--branco);
+  border-radius: 20px;
+  padding: 36px 28px 28px;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.3);
+}
+.login-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.login-logo .logo-nome { font-size: 22px; color: var(--cinza-8); }
+.login-logo .logo-icon { font-size: 26px; }
+
+.login-subtitulo {
+  text-align: center;
+  font-size: 13px;
+  color: var(--cinza-5);
+  margin-bottom: 24px;
+}
+
+.campo { margin-bottom: 14px; }
+.campo-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cinza-8);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.campo-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid var(--cinza-3);
+  border-radius: 10px;
+  font-size: 15px;
+  color: var(--cinza-8);
+  background: var(--cinza-1);
+  transition: border-color .2s;
+  outline: none;
+}
+.campo-input:focus { border-color: var(--azul); background: var(--branco); }
+
+.login-erro {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: var(--vermelho);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 9px 12px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.btn-login {
+  width: 100%;
+  padding: 14px;
+  background: var(--azul);
+  color: var(--branco);
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .2s, transform .1s;
+  margin-top: 4px;
+}
+.btn-login:hover  { background: var(--azul-esc); }
+.btn-login:active { transform: scale(.98); }
+
+.login-link-aluno {
+  display: block;
+  text-align: center;
+  margin-top: 16px;
+  color: var(--cinza-5);
+  font-size: 13px;
+  text-decoration: none;
+}
+.login-link-aluno:hover { color: var(--azul); }
+
+/* ============================================================
+   PAINEL DO MOTORISTA
+   ============================================================ */
+.pagina-motorista { background: var(--cinza-1); min-height: 100vh; padding-bottom: 40px; }
+
+.motorista-wrapper { max-width: 480px; margin: 0 auto; padding: 0 16px; }
+
+.motorista-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0 8px;
+}
+.motorista-badge {
+  background: var(--azul-claro);
+  color: var(--azul);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+/* Cards */
+.card {
+  background: var(--branco);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-top: 12px;
+  box-shadow: var(--sombra);
+}
+.card-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--cinza-5);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.card-rota { font-size: 18px; font-weight: 700; color: var(--cinza-8); }
+
+.card-status { display: flex; align-items: center; gap: 16px; }
+
+.status-circle {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: var(--cinza-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+  transition: background .4s;
+}
+.circle-ativo {
+  background: var(--verde-claro);
+  animation: ring 2s infinite;
+}
+@keyframes ring {
+  0%   { box-shadow: 0 0 0 0 rgba(22,163,74,.4); }
+  70%  { box-shadow: 0 0 0 10px rgba(22,163,74,0); }
+  100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); }
+}
+.status-titulo { font-weight: 700; font-size: 15px; color: var(--cinza-8); }
+.status-sub    { font-size: 12px; color: var(--cinza-5); margin-top: 2px; }
+
+.card-coords { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.coord-item  { display: flex; flex-direction: column; gap: 2px; }
+.coord-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--cinza-5);
+  font-weight: 600;
+}
+.coord-val { font-size: 13px; font-weight: 600; color: var(--cinza-8); font-variant-numeric: tabular-nums; }
+
+/* Botões */
+.botoes { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+
+.btn-iniciar, .btn-parar {
+  width: 100%;
+  padding: 15px;
+  border-radius: var(--radius);
+  border: none;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity .2s, transform .1s;
+}
+.btn-iniciar:active, .btn-parar:active { transform: scale(.98); }
+
+.btn-iniciar { background: var(--verde); color: var(--branco); }
+.btn-iniciar:hover:not(:disabled) { background: #15803d; }
+.btn-iniciar:disabled { opacity: .4; cursor: not-allowed; }
+
+.btn-parar { background: var(--cinza-2); color: var(--vermelho); border: 2px solid var(--cinza-3); }
+.btn-parar:hover:not(:disabled) { background: #fee2e2; border-color: var(--vermelho); }
+.btn-parar:disabled { opacity: .4; cursor: not-allowed; }
+
+/* Log */
+.log-box {
+  background: var(--cinza-8);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-top: 16px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.log-titulo {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: #64748b;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.log-item { font-size: 12px; font-family: 'Courier New', monospace; padding: 2px 0; color: #94a3b8; }
+.log-ok   { color: #4ade80; }
+.log-erro { color: #f87171; }
+
+.link-aluno {
+  display: block;
+  text-align: center;
+  margin-top: 20px;
+  color: var(--azul);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.link-aluno:hover { text-decoration: underline; }
+
+/* ============================================================
+   RESPONSIVO
+   ============================================================ */
+@media (max-width: 380px) {
+  .infobar-inner { gap: 12px; }
+  .card-coords   { gap: 8px; }
+  .chegada-inner { padding: 12px 14px; }
+  .chegada-nome  { font-size: 13px; }
+}

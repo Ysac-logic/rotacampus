@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RotaCampus – Motorista</title>
+
+  <script type="module">
+    import { initializeApp }             from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, update }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { firebaseConfig }            from "./js/firebase-config.js";
+    import { iniciarPainelMotorista }    from "./js/motorista.js";
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+    iniciarPainelMotorista(db, ref, update);
+  </script>
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="pagina-motorista">
+
+  <!-- ════════════════════════════════════════════════════════
+       TELA DE LOGIN
+  ═════════════════════════════════════════════════════════ -->
+  <div class="login-wrapper" id="telaLogin">
+    <div class="login-card">
+      <div class="login-logo">
+        <span class="logo-icon">🚌</span>
+        <span class="logo-nome">RotaCampus</span>
+      </div>
+      <p class="login-subtitulo">Área do Motorista</p>
+
+      <div class="campo">
+        <label class="campo-label" for="loginUsuario">Usuário</label>
+        <input class="campo-input" type="text" id="loginUsuario" placeholder="Digite seu usuário" autocomplete="username" />
+      </div>
+
+      <div class="campo">
+        <label class="campo-label" for="loginSenha">Senha</label>
+        <input class="campo-input" type="password" id="loginSenha" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+
+      <div class="login-erro" id="loginErro" style="display:none"></div>
+
+      <button class="btn-login" id="btnLogin">Entrar</button>
+
+      <a href="index.html" class="login-link-aluno">← Ver mapa dos alunos</a>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       PAINEL DO MOTORISTA (oculto até o login)
+  ═════════════════════════════════════════════════════════ -->
+  <div class="motorista-wrapper" id="telaPainel" style="display:none">
+
+    <div class="motorista-header">
+      <div class="logo">
+        <span class="logo-icon">🚌</span>
+        <span class="logo-nome">RotaCampus</span>
+      </div>
+      <span class="motorista-badge">Motorista</span>
+    </div>
+
+    <!-- Rota -->
+    <div class="card">
+      <div class="card-label">Rota ativa</div>
+      <div class="card-rota" id="nomeRota">–</div>
+    </div>
+
+    <!-- Status -->
+    <div class="card card-status">
+      <div class="status-circle" id="statusCircle">
+        <span class="status-circle-icon" id="statusIcon">⏸</span>
+      </div>
+      <div class="status-info">
+        <div class="status-titulo" id="statusTitulo">Rastreamento pausado</div>
+        <div class="status-sub"   id="statusSub">Clique em iniciar para começar</div>
+      </div>
+    </div>
+
+    <!-- Coordenadas -->
+    <div class="card card-coords">
+      <div class="coord-item">
+        <span class="coord-label">Latitude</span>
+        <span class="coord-val"  id="coordLat">–</span>
+      </div>
+      <div class="coord-item">
+        <span class="coord-label">Longitude</span>
+        <span class="coord-val"  id="coordLon">–</span>
+      </div>
+      <div class="coord-item">
+        <span class="coord-label">Velocidade</span>
+        <span class="coord-val"  id="coordVel">–</span>
+      </div>
+      <div class="coord-item">
+        <span class="coord-label">Precisão</span>
+        <span class="coord-val"  id="coordAcc">–</span>
+      </div>
+    </div>
+
+    <!-- Botões -->
+    <div class="botoes">
+      <button class="btn-iniciar" id="btnIniciar">▶ Iniciar rastreamento</button>
+      <button class="btn-parar"   id="btnParar" disabled>■ Encerrar corrida</button>
+    </div>
+
+    <!-- Log -->
+    <div class="log-box">
+      <div class="log-titulo">Log de eventos</div>
+      <div id="logLista"></div>
+    </div>
+
+    <a href="index.html" class="link-aluno">Ver mapa dos alunos →</a>
+
+  </div>
+
+</body>
+</html>

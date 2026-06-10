@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RotaCampus – Monte Santo</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script type="module">
+    import { initializeApp }                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, onValue }            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { firebaseConfig }                       from "./js/firebase-config.js";
+    import { iniciarMapaAluno }                     from "./js/mapa-aluno.js";
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+    iniciarMapaAluno(db, ref, onValue);
+  </script>
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="pagina-aluno">
+
+  <!-- ── Header ──────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">🚌</span>
+        <span class="logo-nome">RotaCampus</span>
+        <span class="logo-cidade">Monte Santo – BA</span>
+      </div>
+      <div class="status-badge" id="statusBadge">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusTexto">Verificando...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Histórico de passagens ───────────────────────────── -->
+  <div class="historico-bar" id="historicoBar">
+    <div class="historico-titulo">
+      <span>📋</span> Passagens de hoje
+    </div>
+    <div class="historico-lista" id="historicoLista">
+      <div class="historico-vazio">Nenhuma parada registrada ainda.</div>
+    </div>
+  </div>
+
+  <!-- ── Info bar ─────────────────────────────────────────── -->
+  <div class="infobar">
+    <div class="infobar-inner">
+      <div class="info-item">
+        <span class="info-label">Rota</span>
+        <span class="info-value" id="nomeRota">–</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Velocidade</span>
+        <span class="info-value" id="velocidade">– km/h</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Atualizado</span>
+        <span class="info-value" id="ultimaAtualizacao">–</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Mapa ─────────────────────────────────────────────── -->
+  <div id="map"></div>
+
+  <!-- ── Legenda ──────────────────────────────────────────── -->
+  <div class="legenda">
+    <div class="legenda-item"><span style="font-size:14px">🚌</span> Ônibus</div>
+    <div class="legenda-item"><span class="legenda-circ"></span> Parada</div>
+  </div>
+
+  <!-- ── Alerta de chegada ────────────────────────────────── -->
+  <div class="chegada-alerta" id="chegadaAlerta">
+    <div class="chegada-inner">
+      <span class="chegada-icon">🔔</span>
+      <div class="chegada-texto">
+        <div class="chegada-titulo">Ônibus chegou ao ponto!</div>
+        <div class="chegada-nome" id="chegadaNome"></div>
+        <div class="chegada-hora" id="chegadaHora"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Overlay offline ──────────────────────────────────── -->
+  <div class="offline-overlay" id="offlineOverlay">
+    <div class="offline-card">
+      <span class="offline-icon">📡</span>
+      <p class="offline-titulo">Ônibus offline</p>
+      <p class="offline-sub">O rastreamento ainda não foi iniciado ou foi encerrado.</p>
+    </div>
+  </div>
+
+</body>
+</html>
