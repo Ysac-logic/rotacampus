@@ -7,6 +7,19 @@ let usuarioExcluirId = null;
 let editandoId       = null;
 
 // ─────────────────────────────────────────────────────────────
+//  UTILITÁRIO: GET COM TIMEOUT
+//  Garante que o Firebase nunca trave indefinidamente
+// ─────────────────────────────────────────────────────────────
+function getComTimeout(referencia, ms = 8000) {
+  return Promise.race([
+    fbGet(referencia),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Tempo esgotado. Verifique sua conexão.")), ms)
+    ),
+  ]);
+}
+
+// ─────────────────────────────────────────────────────────────
 //  UTILITÁRIOS
 // ─────────────────────────────────────────────────────────────
 function formatarData(iso) {
@@ -21,14 +34,30 @@ function formatarData(iso) {
 function badgeTipoLog(tipo) {
   const map = {
     login:                  { label: "Login",        cls: "badge-verde"    },
+    login_admin:            { label: "Login admin",  cls: "badge-azul"     },
     login_falhou:           { label: "Falha login",  cls: "badge-vermelho" },
     rastreamento_iniciado:  { label: "Rastreamento", cls: "badge-azul"     },
     rastreamento_encerrado: { label: "Encerrado",    cls: "badge-cinza"    },
     logout:                 { label: "Logout",       cls: "badge-amarelo"  },
+    usuario_criado:         { label: "Criado",       cls: "badge-verde"    },
+    usuario_editado:        { label: "Editado",      cls: "badge-amarelo"  },
+    usuario_excluido:       { label: "Excluído",     cls: "badge-vermelho" },
     sistema:                { label: "Sistema",      cls: "badge-cinza"    },
   };
   const b = map[tipo] || { label: tipo, cls: "badge-cinza" };
   return `<span class="badge ${b.cls}">${b.label}</span>`;
+}
+
+function mostrarErro(elId, msg) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.textContent   = msg;
+  el.style.display = "block";
+}
+
+function ocultarErro(elId) {
+  const el = document.getElementById(elId);
+  if (el) el.style.display = "none";
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -40,9 +69,7 @@ function initTabs() {
       document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("nav-ativo"));
       document.querySelectorAll(".tab-content").forEach(t => t.style.display = "none");
       btn.classList.add("nav-ativo");
-      const tab = document.getElementById(`tab-${btn.dataset.tab}`);
-      if (tab) tab.style.display = "block";
-
+      document.getElementById(`tab-${btn.dataset.tab}`).style.display = "block";
       if (btn.dataset.tab === "logs") carregarLogs();
     });
   });
@@ -60,7 +87,7 @@ function carregarUsuarios() {
   fbOnValue(fbRef(db, "usuarios"), (snap) => {
     loading.style.display = "none";
     const dados = snap.val() || {};
-    const lista = Object.entries(dados).filter(([, u]) => u.nome); // ignora placeholder
+    const lista = Object.entries(dados).filter(([, u]) => u && u.nome);
 
     if (lista.length === 0) {
       tabela.style.display = "none";
@@ -91,72 +118,64 @@ function carregarUsuarios() {
       tbody.appendChild(tr);
     });
 
-    // Eventos da tabela
-    tbody.querySelectorAll(".btn-editar").forEach(btn => {
-      btn.addEventListener("click", () => abrirFormEdicao(btn.dataset.id, dados[btn.dataset.id]));
-    });
-    tbody.querySelectorAll(".btn-excluir").forEach(btn => {
-      btn.addEventListener("click", () => confirmarExclusao(btn.dataset.id, btn.dataset.nome));
-    });
+    tbody.querySelectorAll(".btn-editar").forEach(btn =>
+      btn.addEventListener("click", () => abrirFormEdicao(btn.dataset.id, dados[btn.dataset.id]))
+    );
+    tbody.querySelectorAll(".btn-excluir").forEach(btn =>
+      btn.addEventListener("click", () => confirmarExclusao(btn.dataset.id, btn.dataset.nome))
+    );
   });
 }
 
 function abrirFormNovo() {
   editandoId = null;
-  document.getElementById("formTitulo").textContent = "Novo motorista";
+  document.getElementById("formTitulo").textContent   = "Novo motorista";
   document.getElementById("fNome").value    = "";
   document.getElementById("fUsuario").value = "";
   document.getElementById("fSenha").value   = "";
   document.getElementById("fAtivo").value   = "true";
-  document.getElementById("formErro").style.display = "none";
+  ocultarErro("formErro");
   document.getElementById("formCard").style.display = "block";
   document.getElementById("fNome").focus();
 }
 
 function abrirFormEdicao(id, dados) {
   editandoId = id;
-  document.getElementById("formTitulo").textContent = "Editar motorista";
+  document.getElementById("formTitulo").textContent   = "Editar motorista";
   document.getElementById("fNome").value    = dados.nome    || "";
   document.getElementById("fUsuario").value = dados.usuario || "";
   document.getElementById("fSenha").value   = dados.senha   || "";
   document.getElementById("fAtivo").value   = dados.ativo !== false ? "true" : "false";
-  document.getElementById("formErro").style.display = "none";
+  ocultarErro("formErro");
   document.getElementById("formCard").style.display = "block";
   document.getElementById("fNome").focus();
 }
 
 async function salvarUsuario() {
-  const erroEl  = document.getElementById("formErro");
   const nome    = document.getElementById("fNome").value.trim();
   const usuario = document.getElementById("fUsuario").value.trim().toLowerCase();
   const senha   = document.getElementById("fSenha").value.trim();
   const ativo   = document.getElementById("fAtivo").value === "true";
 
+  ocultarErro("formErro");
+
   if (!nome || !usuario || !senha) {
-    erroEl.textContent   = "Preencha todos os campos.";
-    erroEl.style.display = "block";
-    return;
+    return mostrarErro("formErro", "Preencha todos os campos.");
   }
-  if (senha.length < 6) {
-    erroEl.textContent   = "A senha deve ter pelo menos 6 caracteres.";
-    erroEl.style.display = "block";
-    return;
+  if (senha.length < 4) {
+    return mostrarErro("formErro", "A senha deve ter pelo menos 4 caracteres.");
   }
 
-  const btnSalvar = document.getElementById("btnSalvarUsuario");
-  btnSalvar.disabled    = true;
-  btnSalvar.textContent = "Salvando...";
+  const btn = document.getElementById("btnSalvarUsuario");
+  btn.disabled = true; btn.textContent = "Salvando...";
 
   try {
-    // Verificar duplicidade de usuário
-    const snap = await fbGet(fbRef(db, "usuarios"));
+    const snap  = await getComTimeout(fbRef(db, "usuarios"));
     const todos = snap.val() || {};
 
     for (const [id, u] of Object.entries(todos)) {
-      if (u.usuario === usuario && id !== editandoId) {
-        erroEl.textContent   = `O usuário "${usuario}" já existe.`;
-        erroEl.style.display = "block";
-        return;
+      if (u && u.usuario === usuario && id !== editandoId) {
+        return mostrarErro("formErro", `O usuário "${usuario}" já existe.`);
       }
     }
 
@@ -171,18 +190,15 @@ async function salvarUsuario() {
       await fbSet(fbRef(db, `usuarios/${editandoId}`), dados);
       registrarLogAdmin("usuario_editado", `Admin editou o motorista "${nome}"`);
     } else {
-      const novoRef = await fbPush(fbRef(db, "usuarios"), dados);
+      await fbPush(fbRef(db, "usuarios"), dados);
       registrarLogAdmin("usuario_criado", `Admin criou o motorista "${nome}" (${usuario})`);
     }
 
     document.getElementById("formCard").style.display = "none";
-    erroEl.style.display = "none";
   } catch (e) {
-    erroEl.textContent   = `Erro ao salvar: ${e.message}`;
-    erroEl.style.display = "block";
+    mostrarErro("formErro", e.message || "Erro ao salvar.");
   } finally {
-    btnSalvar.disabled    = false;
-    btnSalvar.textContent = "Salvar";
+    btn.disabled = false; btn.textContent = "Salvar";
   }
 }
 
@@ -195,14 +211,18 @@ function confirmarExclusao(id, nome) {
 
 async function excluirUsuario() {
   if (!usuarioExcluirId) return;
+  const btn = document.getElementById("btnConfirmarExcluir");
+  btn.disabled = true; btn.textContent = "Excluindo...";
+
   try {
-    const snap = await fbGet(fbRef(db, `usuarios/${usuarioExcluirId}`));
+    const snap = await getComTimeout(fbRef(db, `usuarios/${usuarioExcluirId}`));
     const nome = snap.val()?.nome || "desconhecido";
     await fbRemove(fbRef(db, `usuarios/${usuarioExcluirId}`));
     registrarLogAdmin("usuario_excluido", `Admin excluiu o motorista "${nome}"`);
   } catch (e) {
     alert("Erro ao excluir: " + e.message);
   } finally {
+    btn.disabled = false; btn.textContent = "Sim, excluir";
     document.getElementById("modalExcluir").style.display = "none";
     usuarioExcluirId = null;
   }
@@ -218,22 +238,21 @@ async function carregarLogs() {
   const tbody   = document.getElementById("tbodyLogs");
 
   loading.style.display = "block";
+  loading.textContent   = "Carregando logs...";
   tabela.style.display  = "none";
   vazio.style.display   = "none";
 
   try {
-    const snap  = await fbGet(fbRef(db, "logs"));
+    const snap   = await getComTimeout(fbRef(db, "logs"));
     const filtro = document.getElementById("filtroTipoLog").value;
     const dados  = snap.val() || {};
 
     let lista = Object.values(dados)
-      .filter(l => l.timestamp)
-      .sort((a, b) => b.timestamp.localeCompare(a.timestamp)); // mais recente primeiro
+      .filter(l => l && l.timestamp)
+      .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
     if (filtro) lista = lista.filter(l => l.tipo === filtro);
-
-    // Ignorar placeholder de inicialização
-    lista = lista.filter(l => l.tipo !== "sistema" || l.mensagem !== "Banco inicializado");
+    lista = lista.filter(l => !(l.tipo === "sistema" && l.mensagem === "Banco inicializado"));
 
     loading.style.display = "none";
 
@@ -256,7 +275,7 @@ async function carregarLogs() {
       tbody.appendChild(tr);
     });
   } catch (e) {
-    loading.textContent = "Erro ao carregar logs: " + e.message;
+    loading.textContent = "Erro: " + e.message;
   }
 }
 
@@ -292,9 +311,8 @@ function iniciarStatusAoVivo() {
       badge.className     = "scb-badge badge-cinza";
     }
 
-    const vel = o.velocidade;
     document.getElementById("statVelocidade").textContent =
-      vel != null ? `${Math.round(vel * 3.6)} km/h` : "–";
+      o.velocidade != null ? `${Math.round(o.velocidade * 3.6)} km/h` : "–";
     document.getElementById("statLat").textContent =
       o.latitude  ? o.latitude.toFixed(5)  : "–";
     document.getElementById("statLon").textContent =
@@ -303,7 +321,7 @@ function iniciarStatusAoVivo() {
     if (o.ultimaAtualizacao) {
       const diff = Math.floor((Date.now() - new Date(o.ultimaAtualizacao)) / 1000);
       document.getElementById("statAtualizacao").textContent =
-        diff < 5 ? "agora" : diff < 60 ? `${diff}s atrás` : `${Math.floor(diff/60)}min atrás`;
+        diff < 5 ? "agora" : diff < 60 ? `${diff}s atrás` : `${Math.floor(diff / 60)}min atrás`;
     }
   });
 }
@@ -315,28 +333,32 @@ async function tentarLoginAdmin() {
   const btn     = document.getElementById("btnLogin");
   const usuario = document.getElementById("loginUsuario").value.trim();
   const senha   = document.getElementById("loginSenha").value;
-  const erroEl  = document.getElementById("loginErro");
+
+  ocultarErro("loginErro");
+
+  if (!usuario || !senha) {
+    return mostrarErro("loginErro", "Preencha usuário e senha.");
+  }
 
   btn.disabled    = true;
   btn.textContent = "Verificando...";
 
   try {
-    const snap  = await fbGet(fbRef(db, "admin"));
+    const snap  = await getComTimeout(fbRef(db, "admin"));
     const admin = snap.val();
 
     if (admin && admin.usuario === usuario && admin.senha === senha) {
-      document.getElementById("telaLogin").style.display = "none";
+      document.getElementById("telaLogin").style.display  = "none";
       document.getElementById("telaPainel").style.display = "flex";
 
       initTabs();
       carregarUsuarios();
       iniciarStatusAoVivo();
 
-      registrarLogAdmin("login_admin", `Admin fez login`);
+      registrarLogAdmin("login_admin", "Admin fez login");
     } else {
-      erroEl.textContent   = "Usuário ou senha incorretos.";
-      erroEl.style.display = "block";
-      setTimeout(() => { erroEl.style.display = "none"; }, 3000);
+      mostrarErro("loginErro", "Usuário ou senha incorretos.");
+      setTimeout(() => ocultarErro("loginErro"), 3000);
 
       fbPush(fbRef(db, "logs"), {
         tipo: "login_falhou",
@@ -346,8 +368,7 @@ async function tentarLoginAdmin() {
       }).catch(() => {});
     }
   } catch (e) {
-    erroEl.textContent   = "Erro de conexão: " + e.message;
-    erroEl.style.display = "block";
+    mostrarErro("loginErro", e.message || "Erro de conexão. Tente novamente.");
   } finally {
     btn.disabled    = false;
     btn.textContent = "Entrar como Admin";
@@ -367,27 +388,23 @@ export function iniciarAdmin(database, fns) {
   fbRemove  = fns.remove;
   fbOnValue = fns.onValue;
 
-  // Login
   document.getElementById("btnLogin").addEventListener("click", tentarLoginAdmin);
   document.getElementById("loginSenha").addEventListener("keydown", e => {
     if (e.key === "Enter") tentarLoginAdmin();
   });
 
-  // Formulário de usuário
   document.getElementById("btnNovoUsuario").addEventListener("click", abrirFormNovo);
   document.getElementById("btnSalvarUsuario").addEventListener("click", salvarUsuario);
   document.getElementById("btnCancelarForm").addEventListener("click", () => {
     document.getElementById("formCard").style.display = "none";
   });
 
-  // Modal de exclusão
   document.getElementById("btnConfirmarExcluir").addEventListener("click", excluirUsuario);
   document.getElementById("btnCancelarExcluir").addEventListener("click", () => {
     document.getElementById("modalExcluir").style.display = "none";
     usuarioExcluirId = null;
   });
 
-  // Filtro de logs
   document.getElementById("btnAtualizarLogs").addEventListener("click", carregarLogs);
   document.getElementById("filtroTipoLog").addEventListener("change", carregarLogs);
 }

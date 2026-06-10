@@ -1,32 +1,17 @@
 // ============================================================
 //  PAINEL DO MOTORISTA  –  motorista.js
-//  Credenciais buscadas do Firebase Realtime Database
 // ============================================================
 
 const ROTA_NOME = "Monte Santo – Rota Principal";
 const ONIBUS_ID = "onibus1";
 
-let watchId   = null;
-let db        = null;
-let dbRef     = null;
-let dbUpdate  = null;
-let dbGet     = null;
-let dbPush    = null;
-let usuarioLogado = null; // guarda o ID do usuário logado
-
-// ─────────────────────────────────────────────────────────────
-//  LOG NO BANCO
-// ─────────────────────────────────────────────────────────────
-function registrarLog(tipo, mensagem) {
-  if (!dbPush || !dbRef || !db) return;
-  const { push } = window._fbPush;
-  push(dbRef(db, "logs"), {
-    tipo,
-    mensagem,
-    usuario: usuarioLogado || "desconhecido",
-    timestamp: new Date().toISOString(),
-  }).catch(() => {});
-}
+let watchId      = null;
+let db           = null;
+let dbRef        = null;
+let dbUpdate     = null;
+let dbGet        = null;
+let dbPush       = null;
+let usuarioLogado = null;
 
 // ─────────────────────────────────────────────────────────────
 //  LOG NA TELA
@@ -40,6 +25,18 @@ function log(msg, tipo = "info") {
   el.textContent = `[${hora}] ${msg}`;
   lista.prepend(el);
   while (lista.children.length > 30) lista.removeChild(lista.lastChild);
+}
+
+// ─────────────────────────────────────────────────────────────
+//  LOG NO BANCO
+// ─────────────────────────────────────────────────────────────
+function registrarLog(tipo, mensagem) {
+  if (!dbPush || !dbRef || !db) return;
+  dbPush(dbRef(db, "logs"), {
+    tipo, mensagem,
+    usuario: usuarioLogado || "desconhecido",
+    timestamp: new Date().toISOString(),
+  }).catch(() => {});
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -108,7 +105,7 @@ function iniciarRastreamento() {
 
   setAtivo(true);
   log("Rastreamento iniciado.", "ok");
-  registrarLog("rastreamento_iniciado", `Motorista iniciou o rastreamento`);
+  registrarLog("rastreamento_iniciado", "Motorista iniciou o rastreamento");
 }
 
 function pararRastreamento() {
@@ -123,17 +120,19 @@ function pararRastreamento() {
 
   setAtivo(false);
   log("Rastreamento parado.");
-  registrarLog("rastreamento_encerrado", `Motorista encerrou o rastreamento`);
+  registrarLog("rastreamento_encerrado", "Motorista encerrou o rastreamento");
 }
 
 // ─────────────────────────────────────────────────────────────
-//  LOGIN — busca usuários do Firebase
+//  LOGIN
 // ─────────────────────────────────────────────────────────────
 async function tentarLogin() {
   const btnLogin = document.getElementById("btnLogin");
   const usuario  = document.getElementById("loginUsuario").value.trim();
   const senha    = document.getElementById("loginSenha").value;
   const erroEl   = document.getElementById("loginErro");
+
+  erroEl.style.display = "none";
 
   if (!usuario || !senha) {
     erroEl.textContent   = "Preencha usuário e senha.";
@@ -144,12 +143,21 @@ async function tentarLogin() {
   btnLogin.textContent = "Verificando...";
   btnLogin.disabled    = true;
 
-  try {
-    const { get } = window._fbGet;
-    const snap = await get(dbRef(db, "usuarios"));
-    const usuarios = snap.val() || {};
+  // Timeout de 8s para não travar caso o Firebase demore
+  const timeoutId = setTimeout(() => {
+    btnLogin.textContent = "Entrar";
+    btnLogin.disabled    = false;
+    erroEl.textContent   = "Tempo esgotado. Verifique sua conexão e tente novamente.";
+    erroEl.style.display = "block";
+  }, 8000);
 
+  try {
+    const snap     = await dbGet(dbRef(db, "usuarios"));
+    clearTimeout(timeoutId);
+
+    const usuarios = snap.val() || {};
     let encontrado = null;
+
     for (const [id, u] of Object.entries(usuarios)) {
       if (u.usuario === usuario && u.senha === senha && u.ativo !== false) {
         encontrado = { id, ...u };
@@ -159,38 +167,30 @@ async function tentarLogin() {
 
     if (encontrado) {
       usuarioLogado = encontrado.usuario;
+
       document.getElementById("telaLogin").style.display  = "none";
       document.getElementById("telaPainel").style.display = "block";
       document.getElementById("nomeMotorista").textContent = encontrado.nome || usuario;
       log(`Bem-vindo, ${encontrado.nome || usuario}!`, "ok");
 
-      // Registrar login no banco
-      const { push } = window._fbPush;
-      push(dbRef(db, "logs"), {
-        tipo: "login",
-        mensagem: `Motorista "${encontrado.nome || usuario}" fez login`,
-        usuario: encontrado.usuario,
-        timestamp: new Date().toISOString(),
-      }).catch(() => {});
-
+      registrarLog("login", `Motorista "${encontrado.nome || usuario}" fez login`);
     } else {
       erroEl.textContent   = "Usuário ou senha incorretos, ou conta desativada.";
       erroEl.style.display = "block";
       setTimeout(() => { erroEl.style.display = "none"; }, 4000);
 
-      // Registrar tentativa falha
-      const { push } = window._fbPush;
-      push(dbRef(db, "logs"), {
+      // Registrar falha (sem bloquear)
+      dbPush(dbRef(db, "logs"), {
         tipo: "login_falhou",
         mensagem: `Tentativa de login falhou para "${usuario}"`,
-        usuario: usuario,
+        usuario,
         timestamp: new Date().toISOString(),
       }).catch(() => {});
     }
   } catch (e) {
-    erroEl.textContent   = "Erro ao conectar. Verifique sua conexão.";
+    clearTimeout(timeoutId);
+    erroEl.textContent   = "Erro ao conectar com o servidor. Tente novamente.";
     erroEl.style.display = "block";
-    log(`Erro de conexão: ${e.message}`, "erro");
   } finally {
     btnLogin.textContent = "Entrar";
     btnLogin.disabled    = false;
@@ -202,12 +202,11 @@ async function tentarLogin() {
 //  EXPORTAÇÃO
 // ─────────────────────────────────────────────────────────────
 export function iniciarPainelMotorista(database, refFn, updateFn, getFn, pushFn) {
-  db        = database;
-  dbRef     = refFn;
-  dbUpdate  = updateFn;
-  // Guardar get e push no window para uso nas funções async
-  window._fbGet  = { get: getFn };
-  window._fbPush = { push: pushFn };
+  db       = database;
+  dbRef    = refFn;
+  dbUpdate = updateFn;
+  dbGet    = getFn;   // ← direto na variável, sem window._fbGet
+  dbPush   = pushFn;  // ← direto na variável, sem window._fbPush
 
   document.getElementById("nomeRota").textContent = ROTA_NOME;
 

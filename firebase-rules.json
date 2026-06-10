@@ -1,0 +1,27 @@
+{
+  "rules": {
+    ".read":  false,
+    ".write": false,
+
+    "onibus": {
+      ".read":  true,
+      ".write": true
+    },
+    "paradas": {
+      ".read":  true,
+      ".write": false
+    },
+    "usuarios": {
+      ".read":  true,
+      ".write": true
+    },
+    "logs": {
+      ".read":  true,
+      ".write": true
+    },
+    "admin": {
+      ".read":  true,
+      ".write": false
+    }
+  }
+}
