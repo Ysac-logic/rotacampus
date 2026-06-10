@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/aluno",     "destination": "/index.html"     },
+    { "source": "/motorista", "destination": "/motorista.html" }
+  ]
+}
