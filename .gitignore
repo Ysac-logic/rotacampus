@@ -1,2 +1,9 @@
 node_modules/
+.env
+.env.local
+.env.*
+.vscode/
 .DS_Store
+Thumbs.db
+*.log
+coverage/

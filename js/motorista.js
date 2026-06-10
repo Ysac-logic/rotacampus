@@ -1,20 +1,35 @@
 // ============================================================
 //  PAINEL DO MOTORISTA  –  motorista.js
-//  Com login simples e controle de corrida
+//  Credenciais buscadas do Firebase Realtime Database
 // ============================================================
-
-import { CREDENCIAIS_MOTORISTA } from "./firebase-config.js";
 
 const ROTA_NOME = "Monte Santo – Rota Principal";
 const ONIBUS_ID = "onibus1";
 
-let watchId  = null;
-let db       = null;
-let dbRef    = null;
-let dbUpdate = null;
+let watchId   = null;
+let db        = null;
+let dbRef     = null;
+let dbUpdate  = null;
+let dbGet     = null;
+let dbPush    = null;
+let usuarioLogado = null; // guarda o ID do usuário logado
 
 // ─────────────────────────────────────────────────────────────
-//  LOG
+//  LOG NO BANCO
+// ─────────────────────────────────────────────────────────────
+function registrarLog(tipo, mensagem) {
+  if (!dbPush || !dbRef || !db) return;
+  const { push } = window._fbPush;
+  push(dbRef(db, "logs"), {
+    tipo,
+    mensagem,
+    usuario: usuarioLogado || "desconhecido",
+    timestamp: new Date().toISOString(),
+  }).catch(() => {});
+}
+
+// ─────────────────────────────────────────────────────────────
+//  LOG NA TELA
 // ─────────────────────────────────────────────────────────────
 function log(msg, tipo = "info") {
   const lista = document.getElementById("logLista");
@@ -67,78 +82,118 @@ function atualizarCoords(pos) {
 // ─────────────────────────────────────────────────────────────
 function iniciarRastreamento() {
   if (!navigator.geolocation) {
-    log("Geolocalização não suportada neste navegador.", "erro");
+    log("Geolocalização não suportada.", "erro");
     return;
   }
   log("Solicitando permissão de localização...");
-
-  // Limpar flag de encerramento ao iniciar nova corrida
   dbUpdate(dbRef(db, `onibus/${ONIBUS_ID}`), { encerrou: false });
 
   watchId = navigator.geolocation.watchPosition(
     (pos) => {
       atualizarCoords(pos);
       const dados = {
-        ativo:             true,
-        encerrou:          false,
-        rota:              ROTA_NOME,
-        latitude:          pos.coords.latitude,
-        longitude:         pos.coords.longitude,
-        velocidade:        pos.coords.speed || 0,
+        ativo: true, encerrou: false, rota: ROTA_NOME,
+        latitude:  pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        velocidade: pos.coords.speed || 0,
         ultimaAtualizacao: new Date().toISOString(),
       };
       dbUpdate(dbRef(db, `onibus/${ONIBUS_ID}`), dados)
         .then(() => log(`📍 ${dados.latitude.toFixed(5)}, ${dados.longitude.toFixed(5)}`))
-        .catch(e => log(`Erro ao salvar: ${e.message}`, "erro"));
+        .catch(e => log(`Erro: ${e.message}`, "erro"));
     },
-    (err) => {
-      log(`Erro de localização: ${err.message}`, "erro");
-      setAtivo(false);
-    },
+    (err) => { log(`Erro GPS: ${err.message}`, "erro"); setAtivo(false); },
     { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
   );
 
   setAtivo(true);
   log("Rastreamento iniciado.", "ok");
+  registrarLog("rastreamento_iniciado", `Motorista iniciou o rastreamento`);
 }
 
 function pararRastreamento() {
-  if (watchId !== null) {
-    navigator.geolocation.clearWatch(watchId);
-    watchId = null;
-  }
+  if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
 
-  // encerrou: true → sinaliza para os alunos limparem histórico
   dbUpdate(dbRef(db, `onibus/${ONIBUS_ID}`), {
-    ativo:             false,
-    encerrou:          true,
+    ativo: false, encerrou: true,
     ultimaAtualizacao: new Date().toISOString(),
   })
-    .then(() => log("Corrida encerrada. Histórico dos alunos será limpo.", "ok"))
-    .catch(e => log(`Erro ao encerrar: ${e.message}`, "erro"));
+    .then(() => log("Corrida encerrada.", "ok"))
+    .catch(e => log(`Erro: ${e.message}`, "erro"));
 
   setAtivo(false);
   log("Rastreamento parado.");
+  registrarLog("rastreamento_encerrado", `Motorista encerrou o rastreamento`);
 }
 
 // ─────────────────────────────────────────────────────────────
-//  LOGIN
+//  LOGIN — busca usuários do Firebase
 // ─────────────────────────────────────────────────────────────
-function tentarLogin() {
-  const usuario = document.getElementById("loginUsuario").value.trim();
-  const senha   = document.getElementById("loginSenha").value;
-  const erroEl  = document.getElementById("loginErro");
+async function tentarLogin() {
+  const btnLogin = document.getElementById("btnLogin");
+  const usuario  = document.getElementById("loginUsuario").value.trim();
+  const senha    = document.getElementById("loginSenha").value;
+  const erroEl   = document.getElementById("loginErro");
 
-  if (
-    usuario === CREDENCIAIS_MOTORISTA.usuario &&
-    senha   === CREDENCIAIS_MOTORISTA.senha
-  ) {
-    document.getElementById("telaLogin").style.display  = "none";
-    document.getElementById("telaPainel").style.display = "block";
-    log("Login realizado com sucesso.", "ok");
-  } else {
-    erroEl.textContent = "Usuário ou senha incorretos.";
+  if (!usuario || !senha) {
+    erroEl.textContent   = "Preencha usuário e senha.";
     erroEl.style.display = "block";
+    return;
+  }
+
+  btnLogin.textContent = "Verificando...";
+  btnLogin.disabled    = true;
+
+  try {
+    const { get } = window._fbGet;
+    const snap = await get(dbRef(db, "usuarios"));
+    const usuarios = snap.val() || {};
+
+    let encontrado = null;
+    for (const [id, u] of Object.entries(usuarios)) {
+      if (u.usuario === usuario && u.senha === senha && u.ativo !== false) {
+        encontrado = { id, ...u };
+        break;
+      }
+    }
+
+    if (encontrado) {
+      usuarioLogado = encontrado.usuario;
+      document.getElementById("telaLogin").style.display  = "none";
+      document.getElementById("telaPainel").style.display = "block";
+      document.getElementById("nomeMotorista").textContent = encontrado.nome || usuario;
+      log(`Bem-vindo, ${encontrado.nome || usuario}!`, "ok");
+
+      // Registrar login no banco
+      const { push } = window._fbPush;
+      push(dbRef(db, "logs"), {
+        tipo: "login",
+        mensagem: `Motorista "${encontrado.nome || usuario}" fez login`,
+        usuario: encontrado.usuario,
+        timestamp: new Date().toISOString(),
+      }).catch(() => {});
+
+    } else {
+      erroEl.textContent   = "Usuário ou senha incorretos, ou conta desativada.";
+      erroEl.style.display = "block";
+      setTimeout(() => { erroEl.style.display = "none"; }, 4000);
+
+      // Registrar tentativa falha
+      const { push } = window._fbPush;
+      push(dbRef(db, "logs"), {
+        tipo: "login_falhou",
+        mensagem: `Tentativa de login falhou para "${usuario}"`,
+        usuario: usuario,
+        timestamp: new Date().toISOString(),
+      }).catch(() => {});
+    }
+  } catch (e) {
+    erroEl.textContent   = "Erro ao conectar. Verifique sua conexão.";
+    erroEl.style.display = "block";
+    log(`Erro de conexão: ${e.message}`, "erro");
+  } finally {
+    btnLogin.textContent = "Entrar";
+    btnLogin.disabled    = false;
     document.getElementById("loginSenha").value = "";
   }
 }
@@ -146,24 +201,28 @@ function tentarLogin() {
 // ─────────────────────────────────────────────────────────────
 //  EXPORTAÇÃO
 // ─────────────────────────────────────────────────────────────
-export function iniciarPainelMotorista(database, refFn, updateFn) {
-  db       = database;
-  dbRef    = refFn;
-  dbUpdate = updateFn;
+export function iniciarPainelMotorista(database, refFn, updateFn, getFn, pushFn) {
+  db        = database;
+  dbRef     = refFn;
+  dbUpdate  = updateFn;
+  // Guardar get e push no window para uso nas funções async
+  window._fbGet  = { get: getFn };
+  window._fbPush = { push: pushFn };
 
-  // Botão de login
+  document.getElementById("nomeRota").textContent = ROTA_NOME;
+
   document.getElementById("btnLogin").addEventListener("click", tentarLogin);
   document.getElementById("loginSenha").addEventListener("keydown", e => {
     if (e.key === "Enter") tentarLogin();
   });
 
-  // Botões de rastreamento
-  document.getElementById("nomeRota").textContent = ROTA_NOME;
   document.getElementById("btnIniciar").addEventListener("click", iniciarRastreamento);
   document.getElementById("btnParar").addEventListener("click",   pararRastreamento);
 
-  // Garantir offline ao fechar
   window.addEventListener("beforeunload", () => {
-    if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+    if (watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+      registrarLog("logout", "Motorista fechou a página durante rastreamento");
+    }
   });
 }

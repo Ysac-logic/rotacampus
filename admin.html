@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RotaCampus – Admin</title>
+
+  <script type="module">
+    import { initializeApp }                              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, get, set, push, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { firebaseConfig }                             from "./js/firebase-config.js";
+    import { iniciarAdmin }                               from "./js/admin.js";
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+    iniciarAdmin(db, { ref, get, set, push, remove, onValue });
+  </script>
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body class="pagina-admin">
+
+  <!-- ── LOGIN ADMIN ───────────────────────────────────────── -->
+  <div class="login-wrapper" id="telaLogin">
+    <div class="login-card">
+      <div class="login-logo">
+        <span class="logo-icon">⚙️</span>
+        <span class="logo-nome">RotaCampus</span>
+      </div>
+      <p class="login-subtitulo">Painel Administrativo</p>
+
+      <div class="campo">
+        <label class="campo-label" for="loginUsuario">Usuário</label>
+        <input class="campo-input" type="text" id="loginUsuario"
+               placeholder="admin" autocomplete="username" />
+      </div>
+      <div class="campo">
+        <label class="campo-label" for="loginSenha">Senha</label>
+        <input class="campo-input" type="password" id="loginSenha"
+               placeholder="••••••••" autocomplete="current-password" />
+      </div>
+
+      <div class="login-erro" id="loginErro" style="display:none"></div>
+      <button class="btn-login" id="btnLogin">Entrar como Admin</button>
+      <a href="index.html" class="login-link-aluno">← Voltar ao mapa</a>
+    </div>
+  </div>
+
+  <!-- ── PAINEL ADMIN ──────────────────────────────────────── -->
+  <div id="telaPainel" style="display:none">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <span>⚙️</span>
+        <span>Admin</span>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-btn nav-ativo" data-tab="usuarios">👤 Motoristas</button>
+        <button class="nav-btn"           data-tab="logs">📋 Logs</button>
+        <button class="nav-btn"           data-tab="status">🚌 Status ao vivo</button>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="index.html" class="sidebar-link">← Mapa dos alunos</a>
+      </div>
+    </aside>
+
+    <!-- Conteúdo principal -->
+    <main class="admin-main">
+
+      <!-- ═══ ABA: MOTORISTAS ══════════════════════════════ -->
+      <section class="tab-content tab-ativo" id="tab-usuarios">
+
+        <div class="admin-topbar">
+          <h1 class="admin-titulo">Motoristas</h1>
+          <button class="btn-primary" id="btnNovoUsuario">+ Novo motorista</button>
+        </div>
+
+        <!-- Formulário novo/editar -->
+        <div class="form-card" id="formCard" style="display:none">
+          <div class="form-card-titulo" id="formTitulo">Novo motorista</div>
+          <div class="form-grid">
+            <div class="campo">
+              <label class="campo-label">Nome completo</label>
+              <input class="campo-input" type="text" id="fNome" placeholder="Ex: João Silva" />
+            </div>
+            <div class="campo">
+              <label class="campo-label">Usuário (login)</label>
+              <input class="campo-input" type="text" id="fUsuario" placeholder="Ex: joao" />
+            </div>
+            <div class="campo">
+              <label class="campo-label">Senha</label>
+              <input class="campo-input" type="text" id="fSenha" placeholder="Mínimo 6 caracteres" />
+            </div>
+            <div class="campo">
+              <label class="campo-label">Status</label>
+              <select class="campo-input" id="fAtivo">
+                <option value="true">Ativo</option>
+                <option value="false">Desativado</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-acoes">
+            <button class="btn-primary" id="btnSalvarUsuario">Salvar</button>
+            <button class="btn-cancelar" id="btnCancelarForm">Cancelar</button>
+          </div>
+          <div class="form-erro" id="formErro" style="display:none"></div>
+        </div>
+
+        <!-- Tabela de usuários -->
+        <div class="table-card">
+          <div class="table-loading" id="loadingUsuarios">Carregando motoristas...</div>
+          <table class="admin-table" id="tabelaUsuarios" style="display:none">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Usuário</th>
+                <th>Status</th>
+                <th>Criado em</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyUsuarios"></tbody>
+          </table>
+          <div class="table-vazio" id="vazioUsuarios" style="display:none">
+            Nenhum motorista cadastrado.
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ ABA: LOGS ════════════════════════════════════ -->
+      <section class="tab-content" id="tab-logs" style="display:none">
+
+        <div class="admin-topbar">
+          <h1 class="admin-titulo">Logs de acesso</h1>
+          <div class="log-filtros">
+            <select class="campo-input campo-sm" id="filtroTipoLog">
+              <option value="">Todos os tipos</option>
+              <option value="login">Login</option>
+              <option value="login_falhou">Falha de login</option>
+              <option value="rastreamento_iniciado">Rastreamento iniciado</option>
+              <option value="rastreamento_encerrado">Rastreamento encerrado</option>
+              <option value="logout">Logout</option>
+            </select>
+            <button class="btn-secondary" id="btnAtualizarLogs">↺ Atualizar</button>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-loading" id="loadingLogs">Carregando logs...</div>
+          <table class="admin-table" id="tabelaLogs" style="display:none">
+            <thead>
+              <tr>
+                <th>Data/Hora</th>
+                <th>Tipo</th>
+                <th>Usuário</th>
+                <th>Mensagem</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyLogs"></tbody>
+          </table>
+          <div class="table-vazio" id="vazioLogs" style="display:none">
+            Nenhum log encontrado.
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ ABA: STATUS AO VIVO ══════════════════════════ -->
+      <section class="tab-content" id="tab-status" style="display:none">
+        <div class="admin-topbar">
+          <h1 class="admin-titulo">Status ao vivo</h1>
+        </div>
+
+        <div class="status-grid">
+          <div class="status-card-big" id="statusOnibus">
+            <div class="scb-icon">🚌</div>
+            <div class="scb-info">
+              <div class="scb-titulo" id="statusTituloOnibus">Verificando...</div>
+              <div class="scb-detalhe" id="statusDetalheOnibus">–</div>
+            </div>
+            <div class="scb-badge" id="statusBadgeOnibus">–</div>
+          </div>
+
+          <div class="stats-row">
+            <div class="stat-mini">
+              <div class="stat-mini-valor" id="statVelocidade">–</div>
+              <div class="stat-mini-label">Velocidade</div>
+            </div>
+            <div class="stat-mini">
+              <div class="stat-mini-valor" id="statLat">–</div>
+              <div class="stat-mini-label">Latitude</div>
+            </div>
+            <div class="stat-mini">
+              <div class="stat-mini-valor" id="statLon">–</div>
+              <div class="stat-mini-label">Longitude</div>
+            </div>
+            <div class="stat-mini">
+              <div class="stat-mini-valor" id="statAtualizacao">–</div>
+              <div class="stat-mini-label">Atualizado</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Modal de confirmação de exclusão -->
+  <div class="modal-overlay" id="modalExcluir" style="display:none">
+    <div class="modal-card">
+      <div class="modal-icon">🗑️</div>
+      <div class="modal-titulo">Excluir motorista?</div>
+      <div class="modal-sub" id="modalSubTexto">Esta ação não pode ser desfeita.</div>
+      <div class="modal-acoes">
+        <button class="btn-danger" id="btnConfirmarExcluir">Sim, excluir</button>
+        <button class="btn-cancelar" id="btnCancelarExcluir">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

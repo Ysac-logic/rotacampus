@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/aluno",     "destination": "/index.html"     },
-    { "source": "/motorista", "destination": "/motorista.html" }
+    { "source": "/motorista", "destination": "/motorista.html" },
+    { "source": "/admin",     "destination": "/admin.html"     }
   ]
 }
