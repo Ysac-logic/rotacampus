@@ -1,121 +1,193 @@
 # 🚌 RotaCampus
 
-Sistema de rastreamento de ônibus universitário em tempo real.
+> Plataforma web de rastreamento de ônibus universitário em tempo real — sem app, sem custo, funciona direto no navegador.
+
+![Status](https://img.shields.io/badge/status-ativo-green)
+![Licença](https://img.shields.io/badge/licença-MIT-blue)
+![Firebase](https://img.shields.io/badge/banco-Firebase_Realtime_DB-orange)
+![Hospedagem](https://img.shields.io/badge/hospedagem-Vercel-black)
 
 ---
 
-## Estrutura de arquivos
+## 📌 Sobre o projeto
+
+O **RotaCampus** nasceu de uma necessidade real em Monte Santo, Bahia: alunos universitários não tinham como saber se o ônibus já havia passado ou quando chegaria ao ponto.
+
+A plataforma resolve isso de forma simples — o motorista abre o site no celular, inicia o rastreamento, e todos os alunos passam a ver o ônibus se movendo ao vivo no mapa. Nenhum aplicativo precisa ser instalado. Funciona em qualquer celular com navegador e internet.
+
+---
+
+## ✨ Funcionalidades
+
+### Para os alunos (`/aluno`)
+- 🗺️ Mapa interativo com a posição do ônibus em tempo real
+- 🔔 Alerta na tela quando o ônibus chega em cada ponto, com o horário exato
+- 📋 Histórico de passagens durante a corrida
+- 🟢 Indicador de status (em rota / offline)
+- 🚏 Paradas numeradas desenhadas no mapa com o trajeto da rota
+
+### Para o motorista (`/motorista`)
+- 🔐 Login com credenciais cadastradas pelo admin
+- ▶️ Botão para iniciar o rastreamento via GPS do celular
+- ■ Botão para encerrar a corrida (limpa o histórico para os alunos)
+- 📍 Exibição de coordenadas, velocidade e precisão em tempo real
+- 🖥️ Log de eventos na tela
+
+### Para o administrador (`/admin`)
+- 👤 Cadastro, edição e exclusão de motoristas
+- 📋 Logs completos de login, falhas de acesso e eventos de rastreamento
+- 🚌 Monitoramento do status do ônibus ao vivo
+- 🔒 Acesso protegido por senha
+
+---
+
+## 🛠️ Tecnologias utilizadas
+
+| Função | Tecnologia |
+|---|---|
+| Frontend | HTML5, CSS3, JavaScript puro |
+| Mapas | [Leaflet.js](https://leafletjs.com/) |
+| Dados do mapa | [OpenStreetMap](https://www.openstreetmap.org/) |
+| Banco de dados | [Firebase Realtime Database](https://firebase.google.com/products/realtime-database) |
+| Geolocalização | Geolocation API (nativa do navegador) |
+| Hospedagem | [Vercel](https://vercel.com/) |
+| Controle de versão | Git + GitHub |
+
+---
+
+## 🗂️ Estrutura do projeto
 
 ```
 rota-campus/
-├── index.html                    → Página dos alunos (mapa)
-├── motorista.html                → Painel do motorista
+├── index.html                     → Página dos alunos (mapa ao vivo)
+├── motorista.html                 → Painel do motorista
+├── admin.html                     → Painel administrativo
+├── vercel.json                    → Configuração de rotas da Vercel
+├── firebase-rules.json            → Regras de segurança do Firebase
 ├── firebase-database-inicial.json → Estrutura inicial do banco
+│
 ├── css/
-│   └── style.css                 → Estilos de ambas as páginas
+│   ├── style.css                  → Estilos gerais
+│   └── admin.css                  → Estilos do painel admin
+│
 └── js/
-    ├── firebase-config.js        → ⚠️  Suas credenciais do Firebase
-    ├── mapa-aluno.js             → Lógica do mapa em tempo real
-    └── motorista.js              → Lógica do rastreamento GPS
+    ├── firebase-config.js         → Credenciais do Firebase
+    ├── mapa-aluno.js              → Lógica do mapa e alertas
+    ├── motorista.js               → Lógica de rastreamento e login
+    └── admin.js                   → Lógica do painel administrativo
 ```
 
 ---
 
-## Configuração passo a passo
+## 🚀 Como rodar o projeto
 
-### 1. Criar projeto no Firebase
+### 1. Clone o repositório
+
+```bash
+git clone https://github.com/seu-usuario/rota-campus.git
+cd rota-campus
+```
+
+### 2. Configure o Firebase
 
 1. Acesse [console.firebase.google.com](https://console.firebase.google.com)
-2. Clique em **Adicionar projeto**
-3. Dê um nome (ex: `rotacampus`) e crie
-4. No menu lateral: **Compilação → Realtime Database**
-5. Clique em **Criar banco de dados**
-6. Escolha **Iniciar no modo de teste**
-7. Copie a URL do banco (ex: `https://rotacampus-default-rtdb.firebaseio.com`)
-
-### 2. Registrar um app Web
-
-1. Na página inicial do projeto, clique em **</>** (Web)
-2. Dê um apelido ao app e clique em **Registrar**
-3. Copie o objeto `firebaseConfig` que aparecer
-
-### 3. Editar `js/firebase-config.js`
-
-Substitua os valores de exemplo pelas suas credenciais reais:
+2. Crie um novo projeto
+3. Vá em **Realtime Database → Criar banco de dados** (modo de teste)
+4. Vá em **Configurações do projeto → Seus aplicativos → Web** e copie o `firebaseConfig`
+5. Abra `js/firebase-config.js` e substitua pelos seus valores:
 
 ```js
 export const firebaseConfig = {
-  apiKey:            "SUA_CHAVE_REAL",
+  apiKey:            "SUA_API_KEY",
   authDomain:        "SEU_PROJETO.firebaseapp.com",
   databaseURL:       "https://SEU_PROJETO-default-rtdb.firebaseio.com",
   projectId:         "SEU_PROJETO",
   storageBucket:     "SEU_PROJETO.appspot.com",
-  messagingSenderId: "123456789",
-  appId:             "1:123456789:web:abc123"
+  messagingSenderId: "000000000000",
+  appId:             "SEU_APP_ID"
 };
 ```
 
-### 4. Importar estrutura inicial do banco
+> ⚠️ Copie **apenas o objeto** `firebaseConfig`. Não copie os `import` gerados pelo Firebase Console — eles são para projetos com npm e quebram este projeto.
 
-1. No Realtime Database, clique nos **três pontos** (⋮) → **Importar JSON**
-2. Selecione o arquivo `firebase-database-inicial.json`
+### 3. Importe a estrutura inicial do banco
 
-### 5. Ajustar as coordenadas para sua cidade
+No Firebase Console → Realtime Database → clique nos **⋮** → **Importar JSON** → selecione o arquivo `firebase-database-inicial.json`.
 
-Edite `js/mapa-aluno.js` e altere o array `PARADAS` com as coordenadas reais da sua rota.
+### 4. Configure as regras do banco
 
-Para descobrir coordenadas: abra [openstreetmap.org](https://openstreetmap.org), clique no local com o botão direito e veja a latitude/longitude.
+No Firebase Console → Realtime Database → **Regras** → cole o conteúdo de `firebase-rules.json` e clique em **Publicar**.
 
-Ajuste também o `CENTRO_MAPA` para o centro da sua rota.
+### 5. Publique na Vercel
 
----
+1. Suba o projeto no GitHub
+2. Acesse [vercel.com](https://vercel.com) e importe o repositório
+3. Clique em **Deploy**
+4. Acesse pelas rotas:
+   - `seusite.vercel.app/aluno`
+   - `seusite.vercel.app/motorista`
+   - `seusite.vercel.app/admin`
 
-## Como testar
-
-1. Abra `motorista.html` no celular
-2. Permita o acesso à localização quando o navegador pedir
-3. Clique em **▶ Iniciar rastreamento**
-4. Abra `index.html` em outro dispositivo ou aba
-5. O marcador do ônibus deve aparecer e se mover
-
-> **Importante:** a geolocalização exige HTTPS em produção. Ao publicar na Vercel ou Firebase Hosting, isso já vem incluso.
+> O HTTPS da Vercel é obrigatório para que a Geolocation API funcione no celular.
 
 ---
 
-## Publicar gratuitamente
+## 🔐 Credenciais padrão
 
-### Opção A — Vercel (recomendado)
-1. Crie conta em [vercel.com](https://vercel.com)
-2. Envie a pasta para o [GitHub](https://github.com)
-3. Importe o repositório na Vercel → **Deploy**
-4. Receba uma URL tipo `rotacampus.vercel.app`
+| Acesso | Usuário | Senha |
+|---|---|---|
+| Admin | `admin` | `admin2024` |
+| Motorista | `motorista` | `rota2024` |
 
-### Opção B — Firebase Hosting
-```bash
-npm install -g firebase-tools
-firebase login
-firebase init hosting
-firebase deploy
+> ⚠️ Altere as senhas antes de publicar em produção. As credenciais do admin ficam em `admin` no Realtime Database. As dos motoristas são gerenciadas pelo painel `/admin`.
+
+---
+
+## 📍 Pontos da rota (Monte Santo – BA)
+
+| Ponto | Local | Coordenadas |
+|---|---|---|
+| 1 | Av. Pedra Vermelha, 2751 | -10.439971, -39.327771 |
+| 2 | Posto Altar do Sertão | -10.439915, -39.329013 |
+| 3 | Praça Professor Salgado | -10.440289, -39.333558 |
+
+Para alterar os pontos, edite o array `PARADAS` em `js/mapa-aluno.js`.
+
+---
+
+## 🗺️ Como funciona o rastreamento
+
+```
+Celular do motorista
+        │
+        │  Geolocation API (watchPosition)
+        ▼
+Firebase Realtime Database
+        │
+        │  onValue (WebSocket em tempo real)
+        ▼
+Navegador dos alunos → Leaflet.js atualiza o marcador no mapa
 ```
 
----
-
-## Personalizar a rota
-
-Edite `js/motorista.js`:
-```js
-const ROTA_NOME = "Faculdade → Centro";   // nome exibido na tela
-const ONIBUS_ID = "onibus1";              // chave no banco de dados
-```
+O Firebase mantém uma conexão persistente via WebSocket. Toda vez que o motorista se move e o GPS atualiza, os dados sobem para o banco e são transmitidos instantaneamente para todos os alunos conectados.
 
 ---
 
-## Próximos passos (versão 2)
+## 🔮 Próximas melhorias
 
-- [ ] Login do motorista com Firebase Auth
-- [ ] Suporte a vários ônibus
-- [ ] Ícone personalizado do ônibus (SVG)
-- [ ] Estimativa de chegada nas paradas
-- [ ] Notificação quando o ônibus estiver próximo
-- [ ] Painel administrativo para gerenciar rotas
-- [ ] Histórico do trajeto percorrido
+- [ ] Suporte a múltiplos ônibus e rotas
+- [ ] Estimativa de chegada em cada ponto
+- [ ] Notificação push quando o ônibus estiver próximo
+- [ ] Histórico de trajetos por data
+- [ ] Firebase Authentication para substituir o login manual
+- [ ] Ícone personalizado do ônibus
+
+---
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+---
+
+<p align="center">Feito com ☕ em Monte Santo, Bahia.</p>
